@@ -10,7 +10,8 @@
   "runtimeVersion": "V8",
   "addOns": {
     "common": {
-      "name": "Cell Reminders"
+      "name": "Cell Reminders",
+      "logoUrl": "https://example.com/logo.png"
     },
     "sheets": {
       "homepageTrigger": {

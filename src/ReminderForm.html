@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <form>
+      <label>Selected Cell:</label><br />
+      <input type="text" id="cell" readonly /><br /><br />
+
+      <label>Message:</label><br />
+      <input type="text" id="msg" /><br /><br />
+
+      <label>Due Date/Time:</label><br />
+      <input type="datetime-local" id="due" /><br /><br />
+
+      <button type="button" onclick="submitForm()">Set Reminder</button>
+    </form>
+
+    <script>
+      // Get active cell from server-side
+      google.script.run.withSuccessHandler(a1 => {
+        document.getElementById("cell").value = a1;
+      }).getActiveCellA1();
+
+      function submitForm() {
+        const cell = document.getElementById("cell").value;
+        const msg = document.getElementById("msg").value;
+        const due = document.getElementById("due").value;
+
+        google.script.run.withSuccessHandler(() => {
+          google.script.host.close(); // close sidebar after saving
+        }).createReminder(cell, due, msg);
+      }
+    </script>
+  </body>
+</html>
