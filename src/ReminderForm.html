@@ -1,33 +1,342 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cell Reminders</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+
+      .container {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      input[type="text"],
+      input[type="datetime-local"] {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #e0e0e0;
+        border-radius: 4px;
+        font-size: 14px;
+        box-sizing: border-box;
+        transition: border-color 0.3s;
+      }
+
+      input[type="text"]:focus,
+      input[type="datetime-local"]:focus {
+        outline: none;
+        border-color: #1976d2;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      button {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      .btn-primary {
+        background-color: #1976d2;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background-color: #1565c0;
+      }
+
+      .btn-secondary {
+        background-color: #757575;
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background-color: #616161;
+      }
+
+      .error {
+        color: #d32f2f;
+        font-size: 12px;
+        margin-top: 5px;
+        display: none;
+      }
+
+      .success {
+        color: #388e3c;
+        font-size: 12px;
+        margin-top: 5px;
+        display: none;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        padding: 20px;
+      }
+
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #1976d2;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .help-text {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+      }
+
+      .cell-info {
+        background-color: #e3f2fd;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        border-left: 4px solid #1976d2;
+      }
+    </style>
+  </head>
   <body>
-    <form>
-      <label>Selected Cell:</label><br />
-      <input type="text" id="cell" readonly /><br /><br />
+    <div class="container">
+      <h3 style="margin-top: 0; color: #1976d2">Set Reminder</h3>
 
-      <label>Message:</label><br />
-      <input type="text" id="msg" /><br /><br />
+      <div class="cell-info">
+        <strong>Selected Cell:</strong> <span id="cellDisplay">Loading...</span>
+        <input type="hidden" id="cell" />
+      </div>
 
-      <label>Due Date/Time:</label><br />
-      <input type="datetime-local" id="due" /><br /><br />
+      <form id="reminderForm">
+        <div class="form-group">
+          <label for="msg">Reminder Message *</label>
+          <input
+            type="text"
+            id="msg"
+            placeholder="Enter your reminder message..."
+            required
+          />
+          <div class="error" id="msgError"></div>
+        </div>
 
-      <button type="button" onclick="submitForm()">Set Reminder</button>
-    </form>
+        <div class="form-group">
+          <label for="due">Due Date & Time *</label>
+          <input type="datetime-local" id="due" required />
+          <div class="help-text">Select when you want to be reminded</div>
+          <div class="error" id="dueError"></div>
+        </div>
+
+        <div class="button-group">
+          <button type="button" class="btn-secondary" onclick="cancelForm()">
+            Cancel
+          </button>
+          <button type="submit" class="btn-primary">Add Reminder</button>
+        </div>
+      </form>
+
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>Creating reminder...</div>
+      </div>
+
+      <div class="error" id="generalError"></div>
+      <div class="success" id="successMessage"></div>
+    </div>
 
     <script>
-      // Get active cell from server-side
-      google.script.run.withSuccessHandler(a1 => {
-        document.getElementById("cell").value = a1;
-      }).getActiveCellA1();
+      document.addEventListener("DOMContentLoaded", function () {
+        initializeForm();
+      });
+
+      function initializeForm() {
+        google.script.run
+          .withSuccessHandler(handleCellResponse)
+          .withFailureHandler(handleError)
+          .getActiveCellA1();
+
+        const now = new Date();
+        const localDateTime = new Date(
+          now.getTime() - now.getTimezoneOffset() * 60000
+        )
+          .toISOString()
+          .slice(0, 16);
+        document.getElementById("due").min = localDateTime;
+
+        const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+        const defaultDateTime = new Date(
+          oneHourLater.getTime() - oneHourLater.getTimezoneOffset() * 60000
+        )
+          .toISOString()
+          .slice(0, 16);
+        document.getElementById("due").value = defaultDateTime;
+      }
+
+      function handleCellResponse(cellRef) {
+        if (cellRef) {
+          document.getElementById("cellDisplay").textContent = cellRef;
+          document.getElementById("cell").value = cellRef;
+
+          // Get cell value and set as default message if not empty
+          google.script.run
+            .withSuccessHandler(handleCellValue)
+            .withFailureHandler(() => {}) // Ignore errors
+            .getCellValue(cellRef);
+        } else {
+          document.getElementById("cellDisplay").textContent =
+            "No cell selected";
+          showError("generalError", "Please select a cell first");
+        }
+      }
+
+      function handleCellValue(cellValue) {
+        if (cellValue && cellValue.trim().length > 0) {
+          document.getElementById("msg").value = cellValue.trim();
+        }
+      }
+
+      function handleError(error) {
+        console.error("Error:", error);
+        showError("generalError", "Error loading cell information");
+      }
+
+      document
+        .getElementById("reminderForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          submitForm();
+        });
 
       function submitForm() {
+        clearErrors();
+
         const cell = document.getElementById("cell").value;
-        const msg = document.getElementById("msg").value;
+        const msg = document.getElementById("msg").value.trim();
         const due = document.getElementById("due").value;
 
-        google.script.run.withSuccessHandler(() => {
-          google.script.host.close(); // close sidebar after saving
-        }).createReminder(cell, due, msg);
+        if (!cell) {
+          showError("generalError", "Please select a cell first");
+          return;
+        }
+
+        if (!msg) {
+          showError("msgError", "Message is required");
+          return;
+        }
+
+        if (!due) {
+          showError("dueError", "Due date is required");
+          return;
+        }
+
+        const selectedDate = new Date(due);
+        const now = new Date();
+        if (selectedDate <= now) {
+          showError("dueError", "Due date must be in the future");
+          return;
+        }
+
+        showLoading(true);
+
+        google.script.run
+          .withSuccessHandler(handleSuccess)
+          .withFailureHandler(handleSubmitError)
+          .createReminder(cell, due, msg);
+      }
+
+      function handleSuccess(result) {
+        showLoading(false);
+
+        if (result.success) {
+          showSuccess("Reminder created successfully!");
+          setTimeout(() => {
+            google.script.host.close();
+          }, 1500);
+        } else {
+          showError(
+            "generalError",
+            result.error || "Failed to create reminder"
+          );
+        }
+      }
+
+      function handleSubmitError(error) {
+        showLoading(false);
+        console.error("Submit error:", error);
+        showError(
+          "generalError",
+          "Failed to create reminder. Please try again."
+        );
+      }
+
+      function cancelForm() {
+        google.script.host.close();
+      }
+
+      function showLoading(show) {
+        document.getElementById("loading").style.display = show
+          ? "block"
+          : "none";
+        document.getElementById("reminderForm").style.display = show
+          ? "none"
+          : "block";
+      }
+
+      function showError(elementId, message) {
+        const errorElement = document.getElementById(elementId);
+        errorElement.textContent = message;
+        errorElement.style.display = "block";
+      }
+
+      function showSuccess(message) {
+        const successElement = document.getElementById("successMessage");
+        successElement.textContent = message;
+        successElement.style.display = "block";
+      }
+
+      function clearErrors() {
+        const errorElements = document.querySelectorAll(".error, .success");
+        errorElements.forEach((element) => {
+          element.style.display = "none";
+          element.textContent = "";
+        });
       }
     </script>
   </body>
