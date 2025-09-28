@@ -1,16 +1,10 @@
 {
-  "scriptId": "12S3pC97mJZ6g7yiad6ktnaJFYA5Bgyb6rJ7mOkDhKJSfx201zCfgbz5Q",
+  "scriptId": "19wX6shjHi8bh6YlL-Yef5Y5JOe4x1fAgMgSQgtGM5z8cYVFKrMJnmY0H",
   "rootDir": "src",
-  "scriptExtensions": [
-    ".js",
-    ".gs"
-  ],
-  "htmlExtensions": [
-    ".html"
-  ],
-  "jsonExtensions": [
-    ".json"
-  ],
+  "parentId": "your_sheet_id_here",
+  "scriptExtensions": [".js", ".gs"],
+  "htmlExtensions": [".html"],
+  "jsonExtensions": [".json"],
   "filePushOrder": ["appsscript.json"],
   "skipSubdirectories": false
 }
