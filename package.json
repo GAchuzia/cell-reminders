@@ -1,0 +1,36 @@
+{
+  "name": "cell-reminders",
+  "version": "1.0.0",
+  "description": "Google Sheets add-on for creating due date reminders linked to Google Calendar",
+  "main": "src/Code.js",
+  "scripts": {
+    "version:patch": "npm version patch && git push --follow-tags",
+    "version:minor": "npm version minor && git push --follow-tags",
+    "version:major": "npm version major && git push --follow-tags",
+    "deploy": "clasp push",
+    "pull": "clasp pull",
+    "push": "clasp push",
+    "open": "clasp open",
+    "logs": "clasp logs",
+    "release": "npm run version:patch && npm run deploy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GAchuzia/cell-reminders.git"
+  },
+  "keywords": [
+    "google-sheets",
+    "google-calendar",
+    "reminders",
+    "add-on",
+    "apps-script"
+  ],
+  "author": "Grant Achuzia",
+  "license": "MIT",
+  "devDependencies": {
+    "@google/clasp": "^2.4.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
