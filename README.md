@@ -24,7 +24,6 @@ Google Sheets add-on for creating due date reminders linked to Google Calendar.
 
 Reminders are automatically created in your Google Calendar.
 
-
 ## Contributing
 
 Check out the [CONTRIBUTING.md](CONTRIBUTING.md) if you'd like to help out with this project!
