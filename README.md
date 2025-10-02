@@ -6,7 +6,7 @@ Google Sheets add-on that creates Google Calendar events linked to specific shee
 
 **Want to use this immediately while waiting for Google Marketplace availability?**
 
-Follow the [Developer Guide](scripts\GUIDE.md#) instructions
+Follow the [Developer Guide](scripts/GUIDE.md#) instructions
 
 ## Features
 
