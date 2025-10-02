@@ -1,202 +1,176 @@
+/**
+ * Cell Reminders - Code.js
+ * Main entry points and Calendar integration
+ */
+
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu("Cell Reminders")
-    .addItem("Add Reminder", "showReminderSidebar")
-    .addItem("View Reminders", "listReminders")
-    .addItem("Clear All", "clearAllReminders")
+    .addItem("Add Cell Event", "showReminderSidebar")
+    .addItem("View Cell Events", "listReminders")
+    .addSeparator()
+    .addItem("Help", "showHelp")
     .addToUi();
 }
 
 function getActiveCellA1() {
   const range = SpreadsheetApp.getActiveRange();
-  return range ? range.getA1Notation() : "";
+  const sheet = SpreadsheetApp.getActiveSheet();
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+
+  if (range) {
+    return {
+      cellRef: range.getA1Notation(),
+      sheetName: sheet.getName(),
+      spreadsheetId: spreadsheet.getId(),
+      spreadsheetName: spreadsheet.getName(),
+    };
+  }
+  return null;
 }
 
 function showReminderSidebar() {
-  const html = HtmlService.createHtmlOutputFromFile("ReminderForm")
+  const html = HtmlService.createTemplateFromFile("ReminderForm").evaluate()
     .setTitle("Cell Reminders")
     .setWidth(350);
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
-function createReminder(cellRef, dueDate, message) {
+function createReminder(cellInfo, dueDate, message, isAllDay, repeatType, notification) {
   try {
-    if (!cellRef || !validateCellReference(cellRef)) {
-      return { success: false, error: "Invalid cell reference" };
-    }
-
-    if (!message || message.trim().length === 0) {
-      return { success: false, error: "Message is required" };
-    }
-
-    const dateValidation = validateDate(dueDate);
-    if (!dateValidation.isValid) {
-      return { success: false, error: dateValidation.error };
-    }
-
-    const startTime = dateValidation.date;
-    const endTime = new Date(startTime.getTime() + 30 * 60 * 1000);
-
     const eventResult = createCalendarEvent(
-      `Reminder: ${message}`,
-      startTime,
-      endTime,
-      `Cell ${cellRef} reminder: ${message}`
+      message,
+      dueDate,
+      isAllDay,
+      repeatType,
+      cellInfo,
+      notification
     );
+    if (!eventResult.success) return { success: false, error: eventResult.error };
 
-    if (!eventResult.success) {
-      return { success: false, error: eventResult.error };
-    }
+    const props = PropertiesService.getDocumentProperties();
+    const events = JSON.parse(props.getProperty("events") || "{}");
 
-    const reminders = getAllReminders();
-    const reminderId = generateReminderId();
-
-    reminders[cellRef] = {
-      id: reminderId,
-      message: message.trim(),
-      dueDate: dueDate,
+    const eventKey = `${cellInfo.spreadsheetId}_${cellInfo.sheetName}_${cellInfo.cellRef}`;
+    events[eventKey] = {
+      message,
+      dueDate,
+      isAllDay,
+      repeatType,
+      notification,
       eventId: eventResult.eventId,
+      cellInfo,
       createdAt: new Date().toISOString(),
-      cellValue: getCellValue(cellRef),
     };
 
-    saveReminders(reminders);
-    showToast(`Reminder created for cell ${cellRef}`, "Success");
-
-    return { success: true };
+    props.setProperty("events", JSON.stringify(events));
+    return { success: true, eventId: eventResult.eventId };
   } catch (error) {
-    console.error("Error creating reminder:", error);
-    return {
-      success: false,
-      error: "Failed to create reminder: " + error.toString(),
-    };
+    console.error("Error creating event:", error);
+    return { success: false, error: error.toString() };
   }
 }
 
 function listReminders() {
-  try {
-    const reminders = getAllReminders();
+  const props = PropertiesService.getDocumentProperties();
+  const events = JSON.parse(props.getProperty("events") || "{}");
 
-    if (Object.keys(reminders).length === 0) {
-      const html = HtmlService.createHtmlOutput(
-        `
-        <div style="padding: 20px; text-align: center;">
-          <h3>No Reminders</h3>
-          <p>You don't have any reminders set yet.</p>
-          <p>Select a cell and click "Add Reminder" to get started!</p>
-        </div>
-      `
-      )
-        .setWidth(400)
-        .setHeight(200);
+  let html = "<h3>Existing Events</h3>";
+  if (Object.keys(events).length === 0) {
+    html += "<p>No events found.</p>";
+  } else {
+    html += "<ul style='list-style:none;padding:0;'>";
+    for (const key in events) {
+      const r = events[key];
+      const cellDisplay = `${r.cellInfo.sheetName}!${r.cellInfo.cellRef}`;
+      const dueDisplay = r.isAllDay
+        ? new Date(r.dueDate).toLocaleDateString()
+        : new Date(r.dueDate).toLocaleString();
+      const repeatDisplay = r.repeatType !== "none" ? ` (${r.repeatType})` : "";
+      const notifDisplay = r.notification
+        ? `<br><small>Notify: ${r.notification.value} ${r.notification.unit} before</small>`
+        : "";
 
-      SpreadsheetApp.getUi().showModalDialog(html, "Reminders");
-      return;
+      html += `<li style="margin-bottom:10px;padding:8px;border:1px solid #ddd;border-radius:4px;">
+        <strong>${cellDisplay}</strong><br>
+        ${r.message}<br>
+        <small>Due: ${dueDisplay}${repeatDisplay}</small>
+        ${notifDisplay}
+      </li>`;
     }
-
-    let html = `
-      <div style="padding: 20px;">
-        <h3>Your Reminders</h3>
-        <div style="max-height: 400px; overflow-y: auto;">
-    `;
-
-    for (const cellRef in reminders) {
-      const reminder = reminders[cellRef];
-      const formattedDate = formatDate(reminder.dueDate);
-      const isOverdue = new Date(reminder.dueDate) < new Date();
-
-      html += `
-        <div style="border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; ${
-          isOverdue ? "background-color: #ffebee;" : ""
-        }">
-          <div style="font-weight: bold; color: #1976d2;">Cell ${cellRef}</div>
-          <div style="margin: 5px 0;">${reminder.message}</div>
-          <div style="color: ${
-            isOverdue ? "#d32f2f" : "#666"
-          }; font-size: 0.9em;">
-            Due: ${formattedDate} ${isOverdue ? "OVERDUE" : ""}
-          </div>
-          <div style="margin-top: 10px;">
-            <button onclick="deleteReminder('${cellRef}')" style="background: #f44336; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
-              Delete
-            </button>
-          </div>
-        </div>
-      `;
-    }
-
-    html += `
-        </div>
-        <div style="margin-top: 20px; text-align: center;">
-          <button onclick="google.script.host.close()" style="background: #1976d2; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-            Close
-          </button>
-        </div>
-      </div>
-    `;
-
-    const output = HtmlService.createHtmlOutput(html)
-      .setWidth(500)
-      .setHeight(500);
-    SpreadsheetApp.getUi().showModalDialog(output, "Reminders");
-  } catch (error) {
-    console.error("Error listing reminders:", error);
-    showToast("Error loading reminders", "Error");
+    html += "</ul>";
   }
+
+  SpreadsheetApp.getUi().showModalDialog(
+    HtmlService.createHtmlOutput(html).setWidth(400).setHeight(300),
+    "Events"
+  );
 }
 
-function deleteReminder(cellRef) {
-  try {
-    const reminders = getAllReminders();
-
-    if (!reminders[cellRef]) {
-      return { success: false, error: "Reminder not found" };
-    }
-
-    const reminder = reminders[cellRef];
-
-    if (reminder.eventId) {
-      deleteCalendarEvent(reminder.eventId);
-    }
-
-    delete reminders[cellRef];
-    saveReminders(reminders);
-
-    showToast(`Reminder for cell ${cellRef} deleted`, "Success");
-    return { success: true };
-  } catch (error) {
-    console.error("Error deleting reminder:", error);
-    return {
-      success: false,
-      error: "Failed to delete reminder: " + error.toString(),
-    };
-  }
+function showHelp() {
+  const helpHtml = `
+    <h3>Cell Reminders Help</h3>
+    <ol>
+      <li>Select a cell in your spreadsheet</li>
+      <li>Go to "Cell Reminders" > "Add Event"</li>
+      <li>Fill in the event message (defaults to cell content)</li>
+      <li>Choose all-day or time-based</li>
+      <li>Set repeat & notifications</li>
+    </ol>
+  `;
+  SpreadsheetApp.getUi().showModalDialog(
+    HtmlService.createHtmlOutput(helpHtml).setWidth(400).setHeight(350),
+    "Help"
+  );
 }
 
-function clearAllReminders() {
+/**
+ * Calendar creation
+ */
+function createCalendarEvent(title, dueDate, isAllDay, repeatType, cellInfo, notification) {
   try {
-    const ui = SpreadsheetApp.getUi();
-    const response = ui.alert(
-      "Clear All Reminders",
-      "Are you sure you want to delete all reminders? This action cannot be undone.",
-      ui.ButtonSet.YES_NO
-    );
+    const calendar = CalendarApp.getDefaultCalendar();
+    let start, end, event;
 
-    if (response === ui.Button.YES) {
-      const reminders = getAllReminders();
+    if (isAllDay) {
+      const date = new Date(dueDate);
+      start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      end = new Date(start);
+      end.setDate(end.getDate() + 1);
+    } else {
+      start = new Date(dueDate);
+      end = new Date(start);
+      end.setMinutes(end.getMinutes() + 30);
+    }
 
-      for (const cellRef in reminders) {
-        const reminder = reminders[cellRef];
-        if (reminder.eventId) {
-          deleteCalendarEvent(reminder.eventId);
-        }
+    let description = `Created from ${cellInfo.spreadsheetName} - ${cellInfo.sheetName}!${cellInfo.cellRef}`;
+    if (repeatType !== "none") description += `\nRepeat: ${repeatType}`;
+
+    if (repeatType === "none") {
+      event = isAllDay
+        ? calendar.createAllDayEvent(title, start, { description })
+        : calendar.createEvent(title, start, end, { description });
+    } else {
+      let recurrence;
+      switch (repeatType) {
+        case "daily": recurrence = CalendarApp.newRecurrence().addDailyRule().times(100); break;
+        case "weekly": recurrence = CalendarApp.newRecurrence().addWeeklyRule().times(100); break;
+        case "monthly": recurrence = CalendarApp.newRecurrence().addMonthlyRule().times(100); break;
+        case "yearly": recurrence = CalendarApp.newRecurrence().addYearlyRule().times(100); break;
       }
-
-      saveReminders({});
-      showToast("All reminders cleared", "Success");
+      event = isAllDay
+        ? calendar.createAllDayEventSeries(title, start, recurrence, { description })
+        : calendar.createEventSeries(title, start, end, recurrence, { description });
     }
+
+    if (notification && notification.value && notification.unit) {
+      const minutesBefore = convertToMinutes(notification.value, notification.unit);
+      if (minutesBefore > 0) event.addPopupReminder(minutesBefore);
+    }
+
+    return { success: true, eventId: event.getId() };
   } catch (error) {
-    console.error("Error clearing reminders:", error);
-    showToast("Error clearing reminders", "Error");
+    console.error("Calendar error:", error);
+    return { success: false, error: error.toString() };
   }
 }

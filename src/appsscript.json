@@ -1,23 +1,22 @@
 {
-  "timeZone": "America/New_York",
+  "timeZone": "America/Toronto",
   "dependencies": {},
   "exceptionLogging": "STACKDRIVER",
-  "oauthScopes": [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/calendar",
-    "https://www.googleapis.com/auth/script.container.ui",
-    "https://www.googleapis.com/auth/calendar.events"
-  ],
   "runtimeVersion": "V8",
   "addOns": {
     "common": {
       "name": "Cell Reminders",
       "logoUrl": "https://raw.githubusercontent.com/GAchuzia/cell-reminders/main/assets/cell-reminders-logo.png",
-      "useLocaleFromApp": true
+      "useLocaleFromApp": true,
+      "homepageTrigger": {
+        "runFunction": "showHelp",
+        "enabled": true
+      }
     },
     "sheets": {
       "homepageTrigger": {
-        "runFunction": "onOpen"
+        "runFunction": "showHelp",
+        "enabled": true
       }
     }
   }
