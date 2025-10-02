@@ -12,7 +12,7 @@
     "https://www.googleapis.com/auth/userinfo.email"
   ],
   "urlFetchWhitelist": [
-    "https://raw.githubusercontent.com"
+    "https://raw.githubusercontent.com/GAchuzia/cell-reminders/main/assets/cell-reminders-logo.png"
   ],
   "addOns": {
     "common": {
