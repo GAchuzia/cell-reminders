@@ -11,6 +11,9 @@
     "https://www.googleapis.com/auth/script.scriptapp",
     "https://www.googleapis.com/auth/userinfo.email"
   ],
+  "urlFetchWhitelist": [
+    "https://raw.githubusercontent.com"
+  ],
   "addOns": {
     "common": {
       "name": "Cell Reminders",
