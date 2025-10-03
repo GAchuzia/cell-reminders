@@ -9,6 +9,8 @@
 
 Google Sheets add-on/script that creates Google Calendar events linked to specific sheet cells
 
+![Demo GIF](assets/demo.gif)
+
 ## Developer Quick Start
 
 **Want to use this immediately while waiting for Google Marketplace availability?**
