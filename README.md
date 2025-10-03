@@ -1,5 +1,13 @@
 # Cell Reminders
 
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/GAchuzia/cell-reminders)
+[![Google Sheets](https://img.shields.io/badge/Google%20Sheets-supported-brightgreen)](https://www.google.com/sheets/about/)
+[![Google Calendar](https://img.shields.io/badge/Google%20Calendar-supported-blue)](https://calendar.google.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-active-success.svg)](https://github.com/GAchuzia/cell-reminders)
+[![Made with Apps Script](https://img.shields.io/badge/Made%20with-Apps%20Script-lightgrey)](https://developers.google.com/apps-script)
+[![Marketplace](https://img.shields.io/badge/Google%20Workspace-Coming%20Soon-orange)](https://workspace.google.com/marketplace)
+
 Google Sheets add-on/script that creates Google Calendar events linked to specific sheet cells
 
 ## Developer Quick Start
@@ -16,4 +24,8 @@ Follow the [Developer Guide](scripts/GUIDE.md#) for the Cell Reminders Script
 
 ## Contributing
 
-Check out the [contributing.md](CONTRIBUTING.md) if you'd like to help out with this project!
+Check out the [contributing.md](contributing.md) if you'd like to help out with the project
+
+## Privacy Policy
+
+Checkout [privacy-policy.md](privacy-policy.md) or Cell Reminder's [freeprivacypolicy.com](https://www.freeprivacypolicy.com/live/a55ddcb7-0163-4e4b-9031-ed9b7066e9bc) page for information on how user data is handled
