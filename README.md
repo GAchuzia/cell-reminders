@@ -4,7 +4,6 @@
 [![Google Sheets](https://img.shields.io/badge/Google%20Sheets-supported-brightgreen)](https://www.google.com/sheets/about/)
 [![Google Calendar](https://img.shields.io/badge/Google%20Calendar-supported-blue)](https://calendar.google.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-active-success.svg)](https://github.com/GAchuzia/cell-reminders)
 [![Made with Apps Script](https://img.shields.io/badge/Made%20with-Apps%20Script-lightgrey)](https://developers.google.com/apps-script)
 [![Marketplace](https://img.shields.io/badge/Google%20Workspace-Coming%20Soon-orange)](https://workspace.google.com/marketplace)
 
