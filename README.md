@@ -1,12 +1,12 @@
 # Cell Reminders
 
-Google Sheets add-on that creates Google Calendar events linked to specific sheet cells
+Google Sheets add-on/script that creates Google Calendar events linked to specific sheet cells
 
 ## Developer Quick Start
 
 **Want to use this immediately while waiting for Google Marketplace availability?**
 
-Follow the [Developer Guide](scripts/GUIDE.md#) instructions
+Follow the [Developer Guide](scripts/GUIDE.md#) for the Cell Reminders Script
 
 ## Features
 
