@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*" # only run when pushing tags like v1.0.0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create zip of repository
+        run: |
+          zip -r cell-reminders.zip .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: cell-reminders.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+# Make sure your repo is up-to-date
+# git pull origin main
+
+# Create a tag
+# git tag v1.0.0
+
+# Push the tag to GitHub
+# git push origin v1.0.0
