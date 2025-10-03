@@ -16,4 +16,4 @@ Follow the [Developer Guide](scripts/GUIDE.md#) instructions
 
 ## Contributing
 
-Check out the [CONTRIBUTING.md](CONTRIBUTING.md) if you'd like to help out with this project!
+Check out the [contributing.md](CONTRIBUTING.md) if you'd like to help out with this project!
