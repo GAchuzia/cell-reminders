@@ -1,4 +1,4 @@
-# Cell Reminders
+# Cell Reminders <img src="assets\cell_reminders_logo.png" width="20px" height="20px">
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/GAchuzia/cell-reminders)
 [![Google Sheets](https://img.shields.io/badge/Google%20Sheets-supported-brightgreen)](https://www.google.com/sheets/about/)
