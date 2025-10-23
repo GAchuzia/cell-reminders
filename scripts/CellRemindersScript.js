@@ -1,6 +1,7 @@
 /**
  * Cell Reminders - Developer Script Version
- *
+ * Author: Grant Achuzia
+ * 
  * This is a standalone Google Apps Script that can be deployed immediately
  * without going through the Google Workspace Marketplace.
  *
@@ -20,16 +21,14 @@
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu("Cell Reminders")
-    .addItem("Add Cell Event", "showReminderSidebar")
-    .addItem("View Cell Events", "listReminders")
+    .addItem("Add Event", "showReminderSidebar")
+    .addItem("View Events", "listReminders")
     .addSeparator()
     .addItem("Help", "showHelp")
     .addToUi();
 }
 
-// ============================================================================
-// CORE FUNCTIONS
-// ============================================================================
+// Core
 
 function getActiveCellA1() {
   const range = SpreadsheetApp.getActiveRange();
@@ -153,7 +152,6 @@ function showHelp() {
       <li>Set due date/time</li>
       <li>Optionally set it to repeat</li>
       <li>Optionally set a notification reminder</li>
-      <li>Choose a color for your event</li>
       <li>Click "Add Event"</li>
     </ol>
     <p><strong>Features:</strong></p>
@@ -163,7 +161,6 @@ function showHelp() {
       <li>Supports all-day and timed events</li>
       <li>Repeat options: daily, weekly, monthly, yearly</li>
       <li>Custom notifications</li>
-      <li>Event colors</li>
       <li>Delete events from the list</li>
     </ul>
   `;
@@ -174,9 +171,7 @@ function showHelp() {
   SpreadsheetApp.getUi().showModalDialog(output, "Help");
 }
 
-// ============================================================================
-// EVENT MANAGEMENT FUNCTIONS
-// ============================================================================
+// Event Management
 
 function deleteEventFromList(eventKey, eventId) {
   try {
@@ -237,28 +232,6 @@ function deleteReminderFromStorage(eventKey) {
   }
 }
 
-function getCalendarColors() {
-  try {
-    const calendar = CalendarApp.getDefaultCalendar();
-    return {
-      1: "#a4bdfc", // Lavender
-      2: "#7ae7bf", // Sage
-      3: "#dbadff", // Grape
-      4: "#ff887c", // Flamingo
-      5: "#fbd75b", // Banana
-      6: "#ffb878", // Tangerine
-      7: "#46d6db", // Peacock
-      8: "#e1e1e1", // Graphite
-      9: "#5484ed", // Blueberry
-      10: "#51b749", // Basil
-      11: "#dc2127", // Tomato
-    };
-  } catch (error) {
-    console.error("Error getting calendar colors:", error);
-    return {};
-  }
-}
-
 function showSuccessMessage(message) {
   const html = `
     <div style="text-align: center; padding: 20px;">
@@ -266,7 +239,7 @@ function showSuccessMessage(message) {
         ✓ ${message}
       </div>
       <div style="color: #666; font-size: 14px;">
-        Please wait while we update the list...
+        Feel free to exit out of this message.
       </div>
     </div>
   `;
@@ -277,9 +250,29 @@ function showSuccessMessage(message) {
   SpreadsheetApp.getUi().showModalDialog(output, "Success");
 }
 
-// ============================================================================
-// GOOGLE CALENDAR API FUNCTIONS
-// ============================================================================
+function getCellValue(cellRef, sheetName = null, spreadsheetId = null) {
+  try {
+    let sheet;
+
+    if (spreadsheetId && sheetName) {
+      const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+      sheet = spreadsheet.getSheetByName(sheetName);
+    } else if (sheetName) {
+      sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+    } else {
+      sheet = SpreadsheetApp.getActiveSheet();
+    }
+
+    if (!sheet) return "";
+
+    return sheet.getRange(cellRef).getValue();
+  } catch (error) {
+    console.error("Error getting cell value:", error);
+    return "";
+  }
+}
+
+// Google Calendar API Integration
 
 function createCalendarEvent(
   title,
@@ -378,35 +371,7 @@ function convertToMinutes(value, unit) {
   }
 }
 
-// ============================================================================
-// CELL HELPER
-// ============================================================================
-
-function getCellValue(cellRef, sheetName = null, spreadsheetId = null) {
-  try {
-    let sheet;
-
-    if (spreadsheetId && sheetName) {
-      const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
-      sheet = spreadsheet.getSheetByName(sheetName);
-    } else if (sheetName) {
-      sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
-    } else {
-      sheet = SpreadsheetApp.getActiveSheet();
-    }
-
-    if (!sheet) return "";
-
-    return sheet.getRange(cellRef).getValue();
-  } catch (error) {
-    console.error("Error getting cell value:", error);
-    return "";
-  }
-}
-
-// ============================================================================
-// HTML FORM WITH LIVE CELL UPDATES
-// ============================================================================
+// HTML Form
 
 function getReminderFormHtml() {
   return `<!DOCTYPE html>
