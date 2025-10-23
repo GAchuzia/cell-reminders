@@ -122,15 +122,6 @@
         margin-bottom: 15px;
         border-left: 4px solid #1976d2;
       }
-      #successMessage {
-        display: none;
-        background-color: #d4edda;
-        border: 1px solid #c3e6cb;
-        color: #155724;
-        padding: 10px;
-        border-radius: 4px;
-        margin-top: 10px;
-      }
     </style>
   </head>
   <body>
@@ -202,7 +193,20 @@
           <button type="submit" class="btn-primary">Add Event</button>
         </div>
       </form>
-      <div id="successMessage">✓ Event has been added successfully!</div>
+      <div
+        id="successMessage"
+        style="
+          display: none;
+          background-color: #d4edda;
+          border: 1px solid #c3e6cb;
+          color: #155724;
+          padding: 10px;
+          border-radius: 4px;
+          margin-top: 10px;
+        "
+      >
+        ✓ Event has been added successfully!
+      </div>
     </div>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
@@ -213,11 +217,6 @@
       function initializeForm() {
         google.script.run
           .withSuccessHandler(handleCellResponse)
-          .withFailureHandler(function (error) {
-            console.error("Error getting cell:", error);
-            document.getElementById("cellDisplay").textContent =
-              "Error loading cell";
-          })
           .getActiveCellA1();
         const now = new Date();
         const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
@@ -255,9 +254,6 @@
       function refreshSelectedCell() {
         google.script.run
           .withSuccessHandler(handleCellResponse)
-          .withFailureHandler(function (error) {
-            console.error("Error refreshing cell:", error);
-          })
           .getActiveCellA1();
       }
 
@@ -296,9 +292,6 @@
               setTimeout(() => {
                 google.script.run.showReminderSidebar();
               }, 1500);
-            })
-            .withFailureHandler(function (error) {
-              alert("Error creating event: " + error);
             })
             .createReminder(cellInfo, due, msg, allDay, repeat, notification);
         });
