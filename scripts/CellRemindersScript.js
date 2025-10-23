@@ -108,7 +108,7 @@ function listReminders() {
   if (Object.keys(events).length === 0) {
     html += "<p>No events found.</p>";
   } else {
-    html += "<ul style='list-style-type: none; padding: 0;'>";
+    html += "<ul style='list-style:none;padding:0;'>";
     for (const key in events) {
       const r = events[key];
       const cellDisplay = `${r.cellInfo.sheetName}!${r.cellInfo.cellRef}`;
@@ -120,19 +120,24 @@ function listReminders() {
         ? `<br><small>Notify: ${r.notification.value} ${r.notification.unit} before</small>`
         : "";
 
-      html += `<li style='margin-bottom: 10px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;'>
-        <strong>${cellDisplay}</strong><br>
-        ${r.message}<br>
-        <small>Due: ${dueDisplay}${repeatDisplay}</small>
-        ${notifDisplay}
+      html += `<li style="margin-bottom:10px;padding:8px;border:1px solid #ddd;border-radius:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div style="flex:1;">
+            <strong>${cellDisplay}</strong><br>
+            ${r.message}<br>
+            <small>Due: ${dueDisplay}${repeatDisplay}</small>
+            ${notifDisplay}
+          </div>
+          <button onclick="google.script.run.deleteEventFromList('${key}', '${r.eventId}')" style="background:#dc3545;color:white;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:11px;">Delete</button>
+        </div>
       </li>`;
     }
     html += "</ul>";
   }
 
   const output = HtmlService.createHtmlOutput(html)
-    .setWidth(400)
-    .setHeight(300);
+    .setWidth(500)
+    .setHeight(400);
   SpreadsheetApp.getUi().showModalDialog(output, "Events");
 }
 
@@ -148,14 +153,128 @@ function showHelp() {
       <li>Set due date/time</li>
       <li>Optionally set it to repeat</li>
       <li>Optionally set a notification reminder</li>
+      <li>Choose a color for your event</li>
       <li>Click "Add Event"</li>
     </ol>
+    <p><strong>Features:</strong></p>
+    <ul>
+      <li>Creates events in Google Calendar</li>
+      <li>Works with any Google Sheet</li>
+      <li>Supports all-day and timed events</li>
+      <li>Repeat options: daily, weekly, monthly, yearly</li>
+      <li>Custom notifications</li>
+      <li>Event colors</li>
+      <li>Delete events from the list</li>
+    </ul>
   `;
 
   const output = HtmlService.createHtmlOutput(helpHtml)
     .setWidth(400)
-    .setHeight(350);
+    .setHeight(400);
   SpreadsheetApp.getUi().showModalDialog(output, "Help");
+}
+
+// ============================================================================
+// EVENT MANAGEMENT FUNCTIONS
+// ============================================================================
+
+function deleteEventFromList(eventKey, eventId) {
+  try {
+    // Delete from Google Calendar
+    const deleteResult = deleteEvent(eventId);
+    if (!deleteResult.success) {
+      console.error("Failed to delete calendar event:", deleteResult.error);
+    }
+
+    // Delete from storage
+    const storageResult = deleteReminderFromStorage(eventKey);
+    if (!storageResult.success) {
+      console.error("Failed to delete from storage:", storageResult.error);
+    }
+
+    // Show success message and refresh the list
+    showSuccessMessage("Event deleted!");
+    setTimeout(() => {
+      listReminders();
+    }, 1500);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting event:", error);
+    return { success: false, error: error.toString() };
+  }
+}
+
+function deleteEvent(eventId) {
+  try {
+    const calendar = CalendarApp.getDefaultCalendar();
+    const event = calendar.getEventById(eventId);
+    if (event) {
+      event.deleteEvent();
+      return { success: true };
+    }
+    return { success: false, error: "Event not found" };
+  } catch (error) {
+    console.error("Error deleting event:", error);
+    return { success: false, error: error.toString() };
+  }
+}
+
+function deleteReminderFromStorage(eventKey) {
+  try {
+    const props = PropertiesService.getDocumentProperties();
+    const events = JSON.parse(props.getProperty("events") || "{}");
+
+    if (events[eventKey]) {
+      delete events[eventKey];
+      props.setProperty("events", JSON.stringify(events));
+      return { success: true };
+    }
+    return { success: false, error: "Reminder not found in storage" };
+  } catch (error) {
+    console.error("Error deleting reminder from storage:", error);
+    return { success: false, error: error.toString() };
+  }
+}
+
+function getCalendarColors() {
+  try {
+    const calendar = CalendarApp.getDefaultCalendar();
+    return {
+      1: "#a4bdfc", // Lavender
+      2: "#7ae7bf", // Sage
+      3: "#dbadff", // Grape
+      4: "#ff887c", // Flamingo
+      5: "#fbd75b", // Banana
+      6: "#ffb878", // Tangerine
+      7: "#46d6db", // Peacock
+      8: "#e1e1e1", // Graphite
+      9: "#5484ed", // Blueberry
+      10: "#51b749", // Basil
+      11: "#dc2127", // Tomato
+    };
+  } catch (error) {
+    console.error("Error getting calendar colors:", error);
+    return {};
+  }
+}
+
+function showSuccessMessage(message) {
+  const html = `
+    <div style="text-align: center; padding: 20px;">
+      <div style="color: #388e3c; font-size: 18px; font-weight: bold; margin-bottom: 10px;">
+        ✓ ${message}
+      </div>
+      <div style="color: #666; font-size: 14px;">
+        Please wait while we update the list...
+      </div>
+    </div>
+  `;
+
+  const output = HtmlService.createHtmlOutput(html)
+    .setWidth(300)
+    .setHeight(150);
+  SpreadsheetApp.getUi().showModalDialog(output, "Success");
 }
 
 // ============================================================================
@@ -188,10 +307,12 @@ function createCalendarEvent(
     let description = `Created from ${cellInfo.spreadsheetName} - ${cellInfo.sheetName}!${cellInfo.cellRef}`;
     if (repeatType !== "none") description += `\nRepeat: ${repeatType}`;
 
+    let eventOptions = { description };
+
     if (repeatType === "none") {
       event = isAllDay
-        ? calendar.createAllDayEvent(title, start, { description })
-        : calendar.createEvent(title, start, end, { description });
+        ? calendar.createAllDayEvent(title, start, eventOptions)
+        : calendar.createEvent(title, start, end, eventOptions);
     } else {
       let recurrence;
       switch (repeatType) {
@@ -209,12 +330,19 @@ function createCalendarEvent(
           break;
       }
       event = isAllDay
-        ? calendar.createAllDayEventSeries(title, start, recurrence, {
-            description,
-          })
-        : calendar.createEventSeries(title, start, end, recurrence, {
-            description,
-          });
+        ? calendar.createAllDayEventSeries(
+            title,
+            start,
+            recurrence,
+            eventOptions
+          )
+        : calendar.createEventSeries(
+            title,
+            start,
+            end,
+            recurrence,
+            eventOptions
+          );
     }
 
     if (notification && notification.value && notification.unit) {
@@ -357,6 +485,9 @@ function getReminderFormHtml() {
           <button type="submit" class="btn-primary">Add Event</button>
         </div>
       </form>
+      <div id="successMessage" style="display:none; background-color:#d4edda; border:1px solid #c3e6cb; color:#155724; padding:10px; border-radius:4px; margin-top:10px;">
+        ✓ Event has been added successfully!
+      </div>
     </div>
     <script>
       document.addEventListener("DOMContentLoaded", function(){ initializeForm(); setInterval(refreshSelectedCell, 2000); });
@@ -403,11 +534,24 @@ function getReminderFormHtml() {
         const notifValue=document.getElementById("notifValue").value;
         const notifUnit=document.getElementById("notifUnit").value;
         if(notifValue && notifUnit){ notification={ value:notifValue, unit:notifUnit }; }
-        google.script.run.withSuccessHandler(()=>showReminderSidebarAgain()).createReminder(cellInfo,due,msg,allDay,repeat,notification);
+        google.script.run.withSuccessHandler(()=>{
+          showSuccessMessage("Event added!");
+          setTimeout(() => {
+            google.script.run.showReminderSidebar();
+          }, 1500);
+        }).createReminder(cellInfo,due,msg,allDay,repeat,notification);
       });
 
       function showReminderSidebarAgain(){
         google.script.run.showReminderSidebar();
+      }
+
+      function showSuccessMessage(message) {
+        const successBox = document.getElementById("successMessage");
+        successBox.style.display = "block";
+        setTimeout(() => {
+          successBox.style.display = "none";
+        }, 3000);
       }
 
       function cancelForm(){ google.script.host.close(); }
