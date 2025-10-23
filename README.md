@@ -9,7 +9,7 @@
 
 Google Sheets add-on/script that creates Google Calendar events linked to specific sheet cells
 
-![Demo GIF](assets/demo.gif)
+![Demo GIF](assets/cell_reminders_demo.gif)
 
 ## Developer Quick Start
 
